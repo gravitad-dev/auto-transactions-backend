@@ -13,6 +13,22 @@ app.use(cors());
 app.use(fileUpload());
 
 //------------------------ ROUTES ---------------------------------------
+//<<<<<<<<<<<< main
+app.get("/", (req, res) => {
+  const htmlResponse = `
+    <html>
+      <head>
+        <title>Auto Transaction App</title>
+      </head>
+      <body>
+        <h1>Working</h1>
+      </body>
+    </html>
+  `;
+  res.send(htmlResponse);
+});
+
+
 //<<<<<<<<<<<< wallets
 app.get("/generateWallets", (req, res) => {
   // generate wallets & download json with adress and key
