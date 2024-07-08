@@ -20,6 +20,12 @@ const corsOptions = {
 };
 
 const app = express();
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+app.use(fileUpload());
+app.use(logger("dev"))
+
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: corsOptions,
@@ -28,10 +34,7 @@ const io = new Server(server, {
   }
 });
 
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
-app.use(fileUpload());
-app.use(logger("dev"))
+
 
 
 //------------------------ ROUTES ---------------------------------------
