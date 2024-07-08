@@ -9,7 +9,7 @@ const performTransaction = require("./services/makeTransaction");
 
 
 const corsOptions = {
-  origin: 'https://auto-transactions-frontend.vercel.app',
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 };
@@ -17,6 +17,7 @@ const corsOptions = {
 const app = express();
 const port = process.env.PORT || 3000;
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(fileUpload());
 
 //------------------------ ROUTES ---------------------------------------
