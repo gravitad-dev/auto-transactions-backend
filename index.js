@@ -7,9 +7,16 @@ const generateWallets = require("./services/generateWallets");
 const checkBalances = require("./services/checkBalances");
 const performTransaction = require("./services/makeTransaction");
 
+
+const corsOptions = {
+  origin: 'https://auto-transactions-frontend.vercel.app',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
 const app = express();
 const port = process.env.PORT || 3000;
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(fileUpload());
 
 //------------------------ ROUTES ---------------------------------------
