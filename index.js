@@ -1,5 +1,5 @@
 const express = require("express");
-const http = require('http');
+const http = require("http");
 const { Server } = require("socket.io");
 //const ethers = require("ethers");
 //const fs = require("fs");
@@ -8,34 +8,30 @@ const fileUpload = require("express-fileupload");
 const generateWallets = require("./services/generateWallets");
 const checkBalances = require("./services/checkBalances");
 const performTransaction = require("./services/makeTransaction");
-const logger = require("morgan")
-
+const logger = require("morgan");
 
 //------------------------ CONFIG SERVER -------------------------------
 const corsOptions = {
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
+  origin: "*",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
 };
 
 const app = express();
 
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
+app.options("*", cors(corsOptions));
 app.use(fileUpload());
-app.use(logger("dev"))
+app.use(logger("dev"));
 
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: corsOptions,
   connectionStateRecovery: {
-    maxDisconnectionDuration: 2
-  }
+    maxDisconnectionDuration: {},
+  },
 });
-
-
-
 
 //------------------------ ROUTES ---------------------------------------
 //<<<<<<<<<<<< main
@@ -53,30 +49,56 @@ app.get("/", (req, res) => {
   res.send(htmlResponse);
 });
 
+io.on("connection", (socket) => {
+  console.log("a user connected");
 
-io.on('connection', (socket) => {
-  console.log('a user connected');
-
-  socket.on('disconnect', () => {
-    console.log('user disconnected');
+  socket.on("disconnect", () => {
+    console.log("user disconnected");
   });
 
-  //listener de balances
-  socket.on("startBalanceCheck", async ({ wallets, rpcUrl, chainId, tokenName }) => {
+  // consultation of balances in wallets
+  socket.on(
+    "startBalanceCheck",
+    async ({ wallets, rpcUrl, chainId, tokenName }) => {
+      try {
+        await checkBalances({
+          wallets,
+          rpcUrl,
+          chainId,
+          tokenName,
+          socket,
+        });
+      } catch (error) {
+        socket.emit("balanceUpdate", {
+          error: `Error: ${error.message}`,
+        });
+      }
+    }
+  );
+
+  //transactions
+  socket.on("startTransaction", async (data) => {
     try {
-      await checkBalances({
-        wallets,
-        rpcUrl,
-        chainId,
-        tokenName,
-        socket
+      await performTransaction({
+        type: data.type,
+        wallets: data.wallets,
+        rpcUrl: data.rpcUrl,
+        chainId: data.chainId,
+        senderId: data.senderId,
+        receiverId: data.receiverId,
+        senderIdStart: data.senderIdStart,
+        senderIdEnd: data.senderIdEnd,
+        receiverIdStart: data.receiverIdStart,
+        receiverIdEnd: data.receiverIdEnd,
+        amount: data.amount,
+        socket,
       });
     } catch (error) {
-      socket.emit("balanceUpdate", {
-        error: `Error: ${error.message}`
+      socket.emit("transactionUpdate", {
+        error: `Error: ${error.message}`,
       });
     }
-  })
+  });
 });
 
 //<<<<<<<<<<<< wallets
@@ -90,7 +112,7 @@ app.get("/generateWallets", (req, res) => {
   res.send(JSON.stringify(wallets, null, 2));
 });
 
-
+/*
 //<<< transaction
 app.post("/transaction", async (req, res) => {
   if (!req.files || !req.files.walletsFile) {
@@ -132,7 +154,7 @@ app.post("/transaction", async (req, res) => {
     res.status(500).send("Error al procesar la solicitud: " + error.message);
   }
 });
-
+*/
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Servidor de socket escuchando en el puerto ${PORT}`);

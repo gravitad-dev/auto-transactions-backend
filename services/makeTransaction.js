@@ -4,7 +4,8 @@ async function sendTransaction(
   senderPrivateKey,
   receiverAddress,
   amount,
-  provider
+  provider,
+  id
 ) {
   const signer = new ethers.Wallet(senderPrivateKey, provider);
   const tx = {
@@ -15,39 +16,55 @@ async function sendTransaction(
   try {
     const transaction = await signer.sendTransaction(tx);
     await transaction.wait();
-    return `Transacción exitosa: ${transaction.hash}`;
+    return {
+      id,
+      hash: transaction.hash,
+      status: "Success",
+      error: "",
+    };
   } catch (error) {
-    return `Error en la transacción: ${error.message}`;
+    return {
+      id,
+      status: "Error",
+      error: error.message,
+    };
   }
 }
 
+//------------------------------------------------------------------------------
 async function oneToOneTransaction(
   wallets,
   senderId,
   receiverId,
   amount,
-  provider
+  provider,
+  socket
 ) {
   const senderWallet = wallets.find((w) => w.id === parseInt(senderId));
   const receiverWallet = wallets.find((w) => w.id === parseInt(receiverId));
-  return await sendTransaction(
+  const result = await sendTransaction(
     senderWallet.privateKey,
     receiverWallet.address,
     amount,
-    provider
+    provider,
+    receiverId
   );
+  //console.log(result);
+  socket.emit("transactionUpdate", result);
 }
 
+//------------------------------------------------------------------------------
 async function oneToManyTransaction(
   wallets,
   senderId,
   receiverIdStart,
   receiverIdEnd,
   amount,
-  provider
+  provider,
+  socket
 ) {
   const senderWallet = wallets.find((w) => w.id === parseInt(senderId));
-  let results = [];
+
   for (
     let id = parseInt(receiverIdStart);
     id <= parseInt(receiverIdEnd);
@@ -59,24 +76,27 @@ async function oneToManyTransaction(
         senderWallet.privateKey,
         receiverWallet.address,
         amount,
-        provider
+        provider,
+        id
       );
-      results.push(result);
+      //emit responseve with a socket
+      socket.emit("transactionUpdate", result);
     }
   }
-  return results;
 }
 
+//------------------------------------------------------------------------------
 async function manyToOneTransaction(
   wallets,
   senderIdStart,
   senderIdEnd,
   receiverId,
   amount,
-  provider
+  provider,
+  socket
 ) {
   const receiverWallet = wallets.find((w) => w.id === parseInt(receiverId));
-  let results = [];
+
   for (let id = parseInt(senderIdStart); id <= parseInt(senderIdEnd); id++) {
     const senderWallet = wallets.find((w) => w.id === id);
     if (senderWallet) {
@@ -84,15 +104,15 @@ async function manyToOneTransaction(
         senderWallet.privateKey,
         receiverWallet.address,
         amount,
-        provider
+        provider,
+        id
       );
-      results.push(result);
+      socket.emit("transactionUpdate", result);
     }
   }
-  return results;
 }
 
-// Realiza las diferentes transacciones
+//------------------------------------------------------------------------------
 async function performTransaction({
   type,
   wallets,
@@ -105,6 +125,7 @@ async function performTransaction({
   receiverIdStart,
   receiverIdEnd,
   amount,
+  socket,
 }) {
   const provider = new ethers.JsonRpcProvider(rpcUrl, parseInt(chainId));
 
@@ -115,17 +136,19 @@ async function performTransaction({
         senderId,
         receiverId,
         amount,
-        provider
+        provider,
+        socket
       );
 
     case "oneToMany":
-      return await oneToManyTransaction(
+      await oneToManyTransaction(
         wallets,
         senderId,
         receiverIdStart,
         receiverIdEnd,
         amount,
-        provider
+        provider,
+        socket
       );
 
     case "manyToOne":
@@ -135,7 +158,8 @@ async function performTransaction({
         senderIdEnd,
         receiverId,
         amount,
-        provider
+        provider,
+        socket
       );
 
     default:
