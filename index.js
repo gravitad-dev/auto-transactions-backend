@@ -12,7 +12,7 @@ const logger = require("morgan");
 
 //------------------------ CONFIG SERVER -------------------------------
 const corsOptions = {
-  origin: "*",
+  origin: "https://auto-wallets-frontend.vercel.app",
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
@@ -42,7 +42,7 @@ app.get("/", (req, res) => {
         <title>Auto Transaction App</title>
       </head>
       <body>
-        <h3>Online</h3>
+        <h3>Online 🌱</h3>
       </body>
     </html>
   `;
