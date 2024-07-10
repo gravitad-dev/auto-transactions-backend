@@ -5,17 +5,18 @@ async function sendTransaction(
   receiverAddress,
   amount,
   provider,
-  id
+  id,
+  nonce
 ) {
   const signer = new ethers.Wallet(senderPrivateKey, provider);
   const tx = {
     to: receiverAddress,
     value: ethers.parseEther(amount.toString()),
+    nonce: nonce,
   };
 
   try {
     const transaction = await signer.sendTransaction(tx);
-    await transaction.wait();
     return {
       id,
       hash: transaction.hash,
@@ -42,12 +43,17 @@ async function oneToOneTransaction(
 ) {
   const senderWallet = wallets.find((w) => w.id === parseInt(senderId));
   const receiverWallet = wallets.find((w) => w.id === parseInt(receiverId));
+  const nonce = await provider.getTransactionCount(
+    senderWallet.address,
+    "latest"
+  );
   const result = await sendTransaction(
     senderWallet.privateKey,
     receiverWallet.address,
     amount,
     provider,
-    receiverId
+    receiverId,
+    nonce
   );
   //console.log(result);
   socket.emit("transactionUpdate", result);
@@ -64,7 +70,12 @@ async function oneToManyTransaction(
   socket
 ) {
   const senderWallet = wallets.find((w) => w.id === parseInt(senderId));
+  let nonce = await provider.getTransactionCount(
+    senderWallet.address,
+    "latest"
+  );
 
+  const promises = [];
   for (
     let id = parseInt(receiverIdStart);
     id <= parseInt(receiverIdEnd);
@@ -72,17 +83,20 @@ async function oneToManyTransaction(
   ) {
     const receiverWallet = wallets.find((w) => w.id === id);
     if (receiverWallet) {
-      const result = await sendTransaction(
-        senderWallet.privateKey,
-        receiverWallet.address,
-        amount,
-        provider,
-        id
+      promises.push(
+        sendTransaction(
+          senderWallet.privateKey,
+          receiverWallet.address,
+          amount,
+          provider,
+          id,
+          nonce++
+        ).then((result) => socket.emit("transactionUpdate", result))
       );
-      //emit responseve with a socket
-      socket.emit("transactionUpdate", result);
     }
   }
+
+  await Promise.all(promises);
 }
 
 //------------------------------------------------------------------------------
@@ -97,19 +111,27 @@ async function manyToOneTransaction(
 ) {
   const receiverWallet = wallets.find((w) => w.id === parseInt(receiverId));
 
+  const promises = [];
   for (let id = parseInt(senderIdStart); id <= parseInt(senderIdEnd); id++) {
     const senderWallet = wallets.find((w) => w.id === id);
     if (senderWallet) {
-      const result = await sendTransaction(
-        senderWallet.privateKey,
-        receiverWallet.address,
-        amount,
-        provider,
-        id
-      );
-      socket.emit("transactionUpdate", result);
+      const noncePromise = provider
+        .getTransactionCount(senderWallet.address, "latest")
+        .then((nonce) => {
+          return sendTransaction(
+            senderWallet.privateKey,
+            receiverWallet.address,
+            amount,
+            provider,
+            `${id} to ${receiverId}`,
+            nonce
+          ).then((result) => socket.emit("transactionUpdate", result));
+        });
+      promises.push(noncePromise);
     }
   }
+
+  await Promise.all(promises);
 }
 
 //------------------------------------------------------------------------------
@@ -141,7 +163,7 @@ async function performTransaction({
       );
 
     case "oneToMany":
-      await oneToManyTransaction(
+      return await oneToManyTransaction(
         wallets,
         senderId,
         receiverIdStart,

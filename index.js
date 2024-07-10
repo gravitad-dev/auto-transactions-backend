@@ -1,14 +1,14 @@
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
-//const ethers = require("ethers");
-//const fs = require("fs");
 const cors = require("cors");
 const fileUpload = require("express-fileupload");
 const generateWallets = require("./services/generateWallets");
 const checkBalances = require("./services/checkBalances");
 const performTransaction = require("./services/makeTransaction");
 const logger = require("morgan");
+//const ethers = require("ethers");
+//const fs = require("fs");
 
 //------------------------ CONFIG SERVER -------------------------------
 const corsOptions = {
@@ -42,13 +42,14 @@ app.get("/", (req, res) => {
         <title>Auto Transaction App</title>
       </head>
       <body>
-        <h1>Working</h1>
+        <h3>Online</h3>
       </body>
     </html>
   `;
   res.send(htmlResponse);
 });
 
+//web socket
 io.on("connection", (socket) => {
   console.log("a user connected");
 
@@ -101,7 +102,7 @@ io.on("connection", (socket) => {
   });
 });
 
-//<<<<<<<<<<<< wallets
+// create wallets file
 app.get("/generateWallets", (req, res) => {
   // generate wallets & download json with adress and key
   const numberOfWallets = parseInt(req.query.number) || 1;
@@ -112,49 +113,6 @@ app.get("/generateWallets", (req, res) => {
   res.send(JSON.stringify(wallets, null, 2));
 });
 
-/*
-//<<< transaction
-app.post("/transaction", async (req, res) => {
-  if (!req.files || !req.files.walletsFile) {
-    return res.status(400).send("No se subió ningún archivo de carteras.");
-  }
-
-  const walletsFile = req.files.walletsFile;
-  const wallets = JSON.parse(walletsFile.data.toString()); // Asegúrate de que 'wallets' esté definida correctamente aquí
-
-  const {
-    rpcUrl,
-    chainId,
-    senderId,
-    receiverId,
-    amount,
-    type,
-    senderIdStart,
-    senderIdEnd,
-    receiverIdStart,
-    receiverIdEnd,
-  } = req.body;
-
-  try {
-    const response = await performTransaction({
-      type,
-      wallets,
-      rpcUrl,
-      chainId,
-      senderId,
-      receiverId,
-      senderIdStart,
-      senderIdEnd,
-      receiverIdStart,
-      receiverIdEnd,
-      amount,
-    });
-    res.send(response);
-  } catch (error) {
-    res.status(500).send("Error al procesar la solicitud: " + error.message);
-  }
-});
-*/
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Servidor de socket escuchando en el puerto ${PORT}`);
