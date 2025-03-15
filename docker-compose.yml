@@ -1,0 +1,13 @@
+services:
+  backend:
+    build: .
+    container_name: auto-transactions-backend
+    restart: always
+    ports:
+      - "3010:3010"
+    environment:
+      NODE_ENV: production
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: ["npm", "run", "start"]
