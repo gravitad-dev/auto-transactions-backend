@@ -12,8 +12,8 @@ const logger = require("morgan");
 
 //------------------------ CONFIG SERVER -------------------------------
 const corsOptions = {
-  origin: "https://auto-wallets-frontend.gravitad.xyz",
-//  origin: "https://auto-wallets-frontend.vercel.app",
+  // origin: "http://localhost:5173",
+  origin: "https://auto-wallets-frontend.vercel.app",
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
@@ -61,13 +61,14 @@ io.on("connection", (socket) => {
   // consultation of balances in wallets
   socket.on(
     "startBalanceCheck",
-    async ({ wallets, rpcUrl, chainId, tokenName }) => {
+    async ({ wallets, rpcUrl, chainId, tokenName, tokenAddress }) => {
       try {
         await checkBalances({
           wallets,
           rpcUrl,
           chainId,
           tokenName,
+          tokenAddress, ///<<
           socket,
         });
       } catch (error) {
@@ -94,6 +95,7 @@ io.on("connection", (socket) => {
         receiverIdEnd: data.receiverIdEnd,
         amount: data.amount,
         socket,
+        tokenAddress: data.tokenAddress, //<<<
       });
     } catch (error) {
       socket.emit("transactionUpdate", {
