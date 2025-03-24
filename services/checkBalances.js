@@ -27,7 +27,7 @@ async function checkBalances({
     );
   }
 
-  const walletChunks = chunkArray(wallets, 10);
+  const walletChunks = chunkArray(wallets, 9);
 
   for (const chunk of walletChunks) {
     const balancePromises = chunk.map(async (wallet) => {
