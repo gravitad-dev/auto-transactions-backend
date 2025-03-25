@@ -2,13 +2,13 @@
   "name": "back",
   "version": "1.0.0",
   "description": "",
-  "main": "server.js",
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js",
-    "deploy": "NODE_ENV=production node server.js",
+    "deploy": "NODE_ENV=production node index.js",
     "build": "npm run dev",
-    "dev": "node server.js"
+    "dev": "node index.js"
   },
   "author": "",
   "license": "ISC",
